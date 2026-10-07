@@ -128,15 +128,40 @@ let si=0,found=[],score=0,left=TIME,tick=null,over=false,hinted=false,per=[];
 const src=s=>"data:image/jpeg;base64,"+s.img;
 $("tiles").innerHTML=S.map((s,i)=>`<div class="tile"><img src="${src(s)}" alt=""><span>${icons[i]} ${s.name}</span></div>`).join("");
 function show(id){["start","game","end"].forEach(k=>$(k).classList.toggle("hide",k!==id))}
-function begin(){si=0;score=0;per=[];show("game");load();window.scrollTo(0,0)}
+function showEnd(){
+  const p=score/total;
+  $("final").textContent=score+"/"+total;
+  $("rank").textContent="You identified "+score+"/"+total+" lung risks!";
+  $("msg").textContent=p>=.75?"🏆 Lung Health Hero – you have sharp eyes for hidden hazards.":p>=.45?"👏 Well spotted! A few hazards slipped by – play again to catch them all.":"🌱 Now you know what to look for. Try again and beat your score!";
+  $("bk").innerHTML=S.map((s,i)=>`<div class="bk"><span>${icons[i]} ${s.name}</span><div><i style="width:${(per[i]||0)/s.h.length*100}%"></i></div><b>${per[i]||0}/${s.h.length}</b></div>`).join("");
+  show("end");window.scrollTo(0,0);
+  $("rf").style.strokeDashoffset=452.4;setTimeout(()=>$("rf").style.strokeDashoffset=452.4*(1-p),80);
+}
+function begin(){
+  si=0;score=0;per=[];left=TIME;show("game");
+  clearInterval(tick);
+  tick=setInterval(()=>{
+    left--;upd();
+    if(left<=0) {
+      clearInterval(tick);
+      if(!over) { per[si]=found.length; over=true; }
+      showEnd();
+    }
+  },1000);
+  load();window.scrollTo(0,0);
+}
 function load(){
-  const s=S[si];over=false;found=[];left=TIME;hinted=false;
+  const s=S[si];over=false;found=[];hinted=false;
   $("pic").src=src(s);
   $("stage").querySelectorAll(".ring,.x,.infobox").forEach(e=>e.remove());
-  $("facts").innerHTML="";$("next").classList.add("hide");$("hint").disabled=false;
+  $("facts").innerHTML="";
+  const n=$("next");
+  n.textContent=si<S.length-1?"Skip scene →":"See my results";
+  n.classList.remove("hide");
+  $("hint").disabled=false;
   $("sn").textContent=icons[si]+" "+s.name;
   $("dots").innerHTML=S.map((_,i)=>`<i class="${i<si?"d":i===si?"c":""}"></i>`).join("");
-  upd();clearInterval(tick);tick=setInterval(()=>{left--;upd();if(left<=0)finish()},1000);
+  upd();
 }
 function upd(){
   $("tm").textContent=left;$("arc").style.strokeDashoffset=C*(1-left/TIME);
@@ -175,20 +200,16 @@ $("hint").onclick=()=>{
   if(k<0)return;hinted=true;$("hint").disabled=true;mark(S[si].h[k],"hint");
 };
 function finish(){
-  if(over)return;over=true;clearInterval(tick);per[si]=found.length;$("hint").disabled=true;
+  if(over)return;over=true;per[si]=found.length;$("hint").disabled=true;
   S[si].h.forEach((h,k)=>{if(!found.includes(k)){mark(h,"miss");fact(h,true)}});
-  const n=$("next");n.textContent=si<S.length-1?"Next scene →":"See my results";n.classList.remove("hide");
+  const n=$("next");n.textContent=si<S.length-1?"Next scene →":"See my results";
   n.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 $("next").onclick=()=>{
+  if(!over) { per[si]=found.length; over=true; }
   if(si<S.length-1){si++;load();window.scrollTo(0,0);return}
-  const p=score/total;
-  $("final").textContent=score+"/"+total;
-  $("rank").textContent="You identified "+score+"/"+total+" lung risks!";
-  $("msg").textContent=p>=.75?"🏆 Lung Health Hero – you have sharp eyes for hidden hazards.":p>=.45?"👏 Well spotted! A few hazards slipped by – play again to catch them all.":"🌱 Now you know what to look for. Try again and beat your score!";
-  $("bk").innerHTML=S.map((s,i)=>`<div class="bk"><span>${icons[i]} ${s.name}</span><div><i style="width:${(per[i]||0)/s.h.length*100}%"></i></div><b>${per[i]||0}/${s.h.length}</b></div>`).join("");
-  show("end");window.scrollTo(0,0);
-  $("rf").style.strokeDashoffset=452.4;setTimeout(()=>$("rf").style.strokeDashoffset=452.4*(1-p),80);
+  clearInterval(tick);
+  showEnd();
 };
 $("go").onclick=begin;$("again").onclick=begin;
 $("share").onclick=async()=>{
