@@ -135,19 +135,12 @@ function showEnd(){
 }
 function begin(){
   si=0;score=0;per=[];left=TIME;show("game");$("toasts").innerHTML="";
-  clearInterval(tick);
-  tick=setInterval(()=>{
-    left--;upd();
-    if(left<=0) {
-      clearInterval(tick);
-      if(!over) { per[si]=found.length; over=true; }
-      showEnd();
-    }
-  },1000);
   load();window.scrollTo(0,0);
 }
 function load(){
-  const s=S[si];over=false;found=[];hinted=false;
+  const s=S[si];over=false;found=[];hinted=false;$("toasts").innerHTML="";
+  left=TIME;clearInterval(tick);
+  tick=setInterval(()=>{left--;upd();if(left<=0){clearInterval(tick);finish()}},1000);
   $("pic").src=src(s);
   $("stage").querySelectorAll(".ring,.x").forEach(e=>e.remove());
   const n=$("next");
@@ -171,8 +164,7 @@ function mark(h,cls){
 }
 function fact(h,m){
   const box=$("toasts"),d=document.createElement("div");d.className="toast"+(m?" m":"");
-  d.innerHTML=`<b>${m?"Missed: ":"✓ "}${h[3]}</b>${h[4]}`;box.innerHTML="";box.appendChild(d);
-  setTimeout(()=>{d.classList.add("out");setTimeout(()=>d.remove(),300)},5000);
+  d.innerHTML=`<b>${m?"Missed: ":"✓ "}${h[3]}</b>${h[4]}`;box.appendChild(d);
 }
 $("stage").addEventListener("click",e=>{
   if(over)return;
@@ -188,7 +180,7 @@ $("hint").onclick=()=>{
   if(k<0)return;hinted=true;$("hint").disabled=true;mark(S[si].h[k],"hint");
 };
 function finish(){
-  if(over)return;over=true;per[si]=found.length;$("hint").disabled=true;
+  if(over)return;over=true;clearInterval(tick);per[si]=found.length;$("hint").disabled=true;
   S[si].h.forEach((h,k)=>{if(!found.includes(k)){mark(h,"miss");fact(h,true)}});
   const n=$("next");n.textContent=si<S.length-1?"Next scene →":"See my results";
   n.scrollIntoView({behavior:"smooth",block:"nearest"});
